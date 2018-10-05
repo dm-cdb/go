@@ -73,12 +73,10 @@ func main() {
 
 	     // fmt.Println(s.ServerCapabilities)
 	     // fmt.Println(s.SessionID)
-	     // Sends raw XML
 	        reply, err := s.Exec(netconf.RawMethod("<get-alarm-information/>"))
 	        if err != nil {
 	        	panic(err)
 	        }
-	     // fmt.Printf("Reply: %+v", reply)
 	        var q RpcCde
 	        err = xml.Unmarshal([]byte(reply.RawReply), &q)
 	        if err != nil {
