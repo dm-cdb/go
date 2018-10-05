@@ -19,8 +19,8 @@ import (
 // netconf port ; default is 830 - RFC 4742
 const port = "22"
 // Username info to connect to router
-var user string "putyouruser"
-var sym string "putyourpass"
+var user string = "putyouruser"
+var sym string = "putyourpass"
 
 // Route struct models the xml representation of show route cde
 type Route struct {
@@ -102,7 +102,6 @@ func main() {
 		fmt.Printf("  Protocol        : %s\n", q.Rt.Entry[i].Proto)
 		fmt.Printf("    Age           : %s\n", q.Rt.Entry[i].Age)
 		fmt.Printf("    As path       : %s", q.Rt.Entry[i].AsPath) // AsPath contains a line feed (0x0a)
-		fmt.Printf("    Origin device : %s\n", origin)
 		fmt.Printf("    Communities   : %s\n", comm)
 		fmt.Println()
 	} // end for
