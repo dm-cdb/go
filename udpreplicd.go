@@ -6,6 +6,8 @@ import (
         "strconv"
         "net"
         "os"
+        "io/ioutil"
+        "sync"
         "log"
         "syscall"
         "encoding/binary"
@@ -51,6 +53,7 @@ type Config struct {
         } `json:"Listen"`
 
         Targets []ServerJson `json:"Targets"`
+        mu sync.Mutex
 }
 
 type ServerJson struct {
@@ -59,6 +62,7 @@ type ServerJson struct {
 
 var (
     conf Config
+    confPath string
     ch = make(chan int, 1)
     cherr = make(chan error, 100)
 )
@@ -90,26 +94,35 @@ func watchFile(fpath string){
 
 func loadConfig(reload bool)(string) {
         if reload { log.Println("reloading config") }
-        confFile, err := os.Open("udpsock.json")
-        if err != nil {
-                confFile, err = os.Open("/etc/default/udpsock.json")
-                if err != nil {
+        confFile, err := ioutil.ReadFile("udpreplic.json")
+        if err == nil {
+                confPath = "udpreplic.json"
+        } else {
+                confFile, err = ioutil.ReadFile("/etc/default/udpreplic.json")
+                if err == nil {
+                        confPath = "/etc/default/udpreplic.json"
+                } else {
                         log.Println("open conf file : ", err)
-                        if reload {
-                                return "non existent config file\n"
-                        }  else { os.Exit(1) }
+                        if !reload {
+                                os.Exit(1)
+                        }
                 }
         }
-        defer confFile.Close()
-        decoder := json.NewDecoder(confFile)
-        err = decoder.Decode(&conf)
-        if err != nil {
-                fmt.Println("config parsing error:", err)
+        conf.mu.Lock()
+        defer conf.mu.Unlock()
+        err = json.Unmarshal(confFile, &conf) 
+        if (err != nil) {
+                log.Println("config parsing error:", err)
+                if !reload {
+                        os.Exit(1)
+                }
         }
-        return confFile.Name()
+        return confPath
 }
 
-func init() {
+func main() {
+
+        // Some init
         rand.Seed(time.Now().UTC().UnixNano()) //Seed the random identification ip header field
         confPath := loadConfig(false)
         go watchFile(confPath)
@@ -123,9 +136,7 @@ func init() {
                         }
                 }
         }()
-}
 
-func main() {
         // Open a regular udp socket for reading, rawsocket for writing
         if conf.Listen.Address == "*" {
                 conf.Listen.Address = ""
@@ -148,6 +159,7 @@ func main() {
         var iph IpHeader
         var psh PseuHeader
         var udpH UdpHeader
+        var currTargets []ServerJson
 
         for {
                 n, rAddr, _ := conn.ReadFromUDP(buf)
@@ -161,7 +173,10 @@ func main() {
                 srcport, _ := strconv.ParseUint(remote[1], 10, 16)
 
                 // loops all ip targets and build custom datagram header
-                for _, e := range conf.Targets {
+                conf.mu.Lock()
+                currTargets = conf.Targets
+                conf.mu.Unlock()
+                for _, e := range currTargets {
                         start := time.Now() //debug:packet chrono
                         headerbuf := make([]byte, 28)
 
