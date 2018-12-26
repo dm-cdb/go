@@ -9,6 +9,7 @@ import (
         "io/ioutil"
         "sync"
         "log"
+        "log/syslog"
         "syscall"
         "encoding/binary"
         "encoding/json"
@@ -117,6 +118,17 @@ func loadConfig(reload bool)(string) {
                         os.Exit(1)
                 }
         }
+        // check Targets ip:port syntax
+        for _, e := range conf.Targets {
+                _, err := net.ResolveUDPAddr("udp4", e.Server)
+                if err != nil {
+                       log.Println("conf file : ", err)
+                       if !reload {
+                                os.Exit(1)
+                        }
+                }
+                log.Println("Targeting : ", e.Server)
+        }
         return confPath
 }
 
@@ -124,6 +136,10 @@ func main() {
 
         // Some init
         rand.Seed(time.Now().UTC().UnixNano()) //Seed the random identification ip header field
+        sysLog, err := syslog.New(syslog.LOG_NOTICE, "")
+        if err == nil {
+                log.SetOutput(sysLog)
+        }
         confPath := loadConfig(false)
         go watchFile(confPath)
         go func (){
