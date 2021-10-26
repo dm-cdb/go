@@ -1,7 +1,7 @@
 package main
 
 import (
-        "fmt"
+        //"fmt" //used in debug
         "strings"
         "strconv"
         "net"
@@ -170,7 +170,7 @@ func main() {
         }
         defer syscall.Close(fd)
 
-        var count int // debug:packet counter
+        //var count int // debug:packet counter
         buf := make([]byte, 65535)
         var iph IpHeader
         var psh PseuHeader
@@ -193,7 +193,7 @@ func main() {
                 currTargets = conf.Targets
                 conf.mu.Unlock()
                 for _, e := range currTargets {
-                        start := time.Now() //debug:packet chrono
+                        //start := time.Now() //debug:packet chrono
                         headerbuf := make([]byte, 28)
 
                         // build common ip, pseudo, udp basic header 
@@ -237,9 +237,9 @@ func main() {
                                 log.Println(err)
                        }
                        //debug:packet chrono
-                       end := time.Now()
-                       count++
-                       fmt.Printf("Processing %dth packet(s) in %v\n", count, end.Sub(start))
+                       //end := time.Now()
+                       //count++
+                       //fmt.Printf("Processing %dth packet(s) in %v\n", count, end.Sub(start))
                 }
         }
 }
