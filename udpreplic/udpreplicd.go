@@ -1,3 +1,6 @@
+// Christian de Balorre, 2018"
+// UDP packets replication daemon
+
 package main
 
 import (
